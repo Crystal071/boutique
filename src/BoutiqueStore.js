@@ -40,7 +40,60 @@ const LuxuryBoutiqueStore = () => {
   const [wishlist, setWishlist] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [filters, setFilters] = useState({
+    category: 'all',
+    search: '',
+    designers: [],
+    priceRange: [0, 1000000],
+    materials: [],
+    colors: [],
+    newArrivals: false,
+    onSale: false
+  });
+  
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = filters.category === 'all' || product.category === filters.category;
+    const matchesSearch = 
+      product.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      product.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+      product.designer.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesDesigners = filters.designers.length === 0 || 
+      filters.designers.includes(product.designer);
+    
+    const matchesPriceRange = 
+      product.price >= filters.priceRange[0] && 
+      product.price <= filters.priceRange[1];
+    
+    const matchesMaterials = filters.materials.length === 0 || 
+      filters.materials.some(material => product.materials.includes(material));
+    
+    const matchesColors = filters.colors.length === 0 || 
+      filters.colors.some(color => product.colors.includes(color));
+    
+    const matchesNewArrivals = !filters.newArrivals || product.isNew;
+    
+    const matchesSale = !filters.onSale || product.discount;
+  
+    return matchesCategory && 
+           matchesSearch && 
+           matchesDesigners && 
+           matchesPriceRange && 
+           matchesMaterials && 
+           matchesColors && 
+           matchesNewArrivals && 
+           matchesSale;
+  });
+  const uniqueDesigners = [...new Set(products.map(p => p.designer))];
+  const uniqueColors = [...new Set(products.flatMap(p => p.colors))];
+  const uniqueMaterials = [...new Set(products.flatMap(p => p.materials))];
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
   // Cart management functions
   const addToCart = (product) => {
     setIsCartOpen(true);
@@ -96,12 +149,6 @@ const LuxuryBoutiqueStore = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = activeFilter === 'all' || product.category === activeFilter;
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -118,9 +165,9 @@ const LuxuryBoutiqueStore = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <Input
               className="pl-12 bg-white border-gray-200 w-full"
-              placeholder="Поиск предметов роскоши..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск по бренду, названию..."
+              value={filters.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
             />
           </div>
           <div className="flex gap-4 w-full md:w-auto">
